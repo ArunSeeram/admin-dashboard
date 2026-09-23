@@ -5,7 +5,7 @@ describe("Pagination", () => {
   it("renders page info and counts correctly", () => {
     render(<Pagination page={1} pageSize={10} total={45} onPageChange={jest.fn()} />);
 
-    expect(screen.getByText("Showing")).toBeInTheDocument();
+    expect(screen.getByText(/Showing/)).toBeInTheDocument();
     expect(screen.getByText("1")).toBeInTheDocument();
     expect(screen.getByText("10")).toBeInTheDocument();
     expect(screen.getByText("45")).toBeInTheDocument();

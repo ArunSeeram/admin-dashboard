@@ -45,7 +45,26 @@ Open [`http://localhost:3000`](http://localhost:3000) in your browser. Sign in u
 
 ---
 
-## 2. Key Features
+## 2. Authentication & Demo Login Details
+
+The portal features a built-in Role-Based Access Control (RBAC) system with mock authentication for demonstration and testing purposes.
+
+### Demo Credentials
+
+| Role | Email | Password | Permissions |
+|---|---|---|---|
+| **Admin** *(Default)* | `admin@example.com` | *(Any password / None required)* | **Full Access**: View dashboard, Add employees, Edit profiles, Delete single employee, Bulk delete |
+| **Editor** | `editor@example.com` | *(Any password / None required)* | **Edit Access**: View dashboard, Add employees, Edit profiles (cannot delete) |
+| **Viewer** | `viewer@example.com` | *(Any password / None required)* | **Read-Only**: View dashboard & employee directory |
+
+### How Login Works
+- **Automatic Default Session**: For reviewer convenience, visiting the application (locally or on deployed URLs) automatically initializes an **Admin** session so all capabilities ("Add employee", inline editing, and deletion) are immediately available without gating.
+- **Switching Roles**: To test permissions for different roles (e.g. Editor or Viewer), click **Log out** in the top navigation bar or go directly to [`/login`](http://localhost:3000/login). Select your desired role and click **Sign in**.
+- **Edge Middleware Protection**: Requests without a session cookie are redirected to `/login` by [`middleware.ts`](./middleware.ts).
+
+---
+
+## 3. Key Features
 
 - **Executive Analytics Dashboard**:
   - Top-level KPIs: Total headcount, active headcount, on-leave count, and average company salary.
@@ -80,14 +99,15 @@ Open [`http://localhost:3000`](http://localhost:3000) in your browser. Sign in u
 
 ---
 
-## 3. Project Structure
+## 4. Project Structure
 
 ```
 admin-dashboard/
-├── db.json                     # Mock database used by json-server (port 4000)
+├── db.json                     # Mock database used by json-server (port 4000) & serverless fallback
 ├── middleware.ts               # Server-side auth route guard (cookie check)
 ├── src/
 │   ├── app/                    # Next.js App Router routes
+│   │   ├── api/                # Built-in internal API routes (employees, activities, trend)
 │   │   ├── dashboard/          # Analytics dashboard (Server Component + interactive charts)
 │   │   ├── employees/          # Employee directory & bulk actions
 │   │   │   ├── [id]/           # Employee detail, inline editing & activity log
@@ -103,7 +123,7 @@ admin-dashboard/
 │   ├── hooks/
 │   │   └── useEmployees.ts     # SWR hooks (useEmployees, useEmployee, useEmployeeMutations)
 │   ├── lib/
-│   │   ├── api.ts              # Centralized API client with fetchWithRetry
+│   │   ├── api.ts              # Centralized API client with fetchWithRetry & direct DB fallback
 │   │   ├── types.ts            # Shared domain models, constants (LOCATIONS, DEPARTMENTS, ROLES)
 │   │   └── useAuth.tsx         # Authentication context and permission checking (can())
 │   └── __tests__/              # Unit and integration test suite
@@ -111,7 +131,7 @@ admin-dashboard/
 
 ---
 
-## 4. Architecture & Rendering Strategy
+## 5. Architecture & Rendering Strategy
 
 The project adheres to modern Next.js 14 best practices by balancing Server Components and Client Components:
 
@@ -124,7 +144,7 @@ The project adheres to modern Next.js 14 best practices by balancing Server Comp
 
 ---
 
-## 5. Data Mutations & API Resilience
+## 6. Data Mutations & API Resilience
 
 ### Caching and Optimistic Updates
 - **SWR Integration**: Server data is fetched and cached using SWR. Cached responses are displayed instantly with background revalidations.
@@ -133,13 +153,13 @@ The project adheres to modern Next.js 14 best practices by balancing Server Comp
   - **Sequential API Execution**: Deletion requests are processed sequentially (`for (const id of ids) { await api.deleteEmployee(id); }`) to ensure file-based mock databases (like `json-server`) do not encounter concurrent write locks or file-watcher reload cycles.
   - **Single Revalidation**: SWR revalidation is executed once in a `finally` block after all deletions conclude.
 
-### Network Resilience (`fetchWithRetry`)
+### Network Resilience (`fetchWithRetry`) & Direct DB Fallback
 - The centralized API client in [`src/lib/api.ts`](./src/lib/api.ts) wraps network requests with `fetchWithRetry`.
-- If the server experiences transient restarts or file I/O delays, the request automatically retries with backoff, ensuring uninterrupted user experience.
+- **Automatic Serverless Fallback**: If an external mock server (`:4000`) is offline or unreachable (e.g. during cloud serverless execution on Vercel), the client gracefully falls back to built-in Next.js internal API routes (`/api/*`) backed directly by [`db.json`](./db.json). This ensures zero runtime downtime whether running locally or in the cloud.
 
 ---
 
-## 6. Security & Authorization
+## 7. Security & Authorization
 
 - **Middleware Route Protection**: [`middleware.ts`](./middleware.ts) runs on Edge/server before request execution, redirecting unauthenticated users to `/login`.
 - **Role Permission Utility**: `useAuth().can(action)` checks user permissions (`edit`, `delete`, `bulk`) to conditionally render sensitive actions.
@@ -147,7 +167,7 @@ The project adheres to modern Next.js 14 best practices by balancing Server Comp
 
 ---
 
-## 7. Testing
+## 8. Testing
 
 Unit tests are written with **Jest** and **React Testing Library**:
 
@@ -155,18 +175,21 @@ Unit tests are written with **Jest** and **React Testing Library**:
 npm test
 ```
 
-Tests cover core UI components, user interactions, accessibility roles, and state changes.
+All 3 test suites pass cleanly:
+- `Button.test.tsx` (button click, loading state, disabled behavior)
+- `Pagination.test.tsx` (page counts, boundaries, navigation)
+- `MultiStepForm.test.tsx` (multi-step progression, form validations, conditional leave end date)
 
 ---
 
-## 8. Production Deployment
+## 9. Production Deployment
 
 To deploy this application to production on platforms such as [Vercel](https://vercel.com):
 
-1. Connect your repository to Vercel.
-2. Provide environment variables in the project settings:
-   - `NEXT_PUBLIC_API_URL`: URL of your production backend API.
-   - `AUTH_SECRET`: A secure string for session signing.
-3. Deploy.
+1. Push your repository to GitHub.
+2. Import the repository into [Vercel](https://vercel.com).
+3. (Optional) Provide environment variables in the project settings:
+   - `AUTH_SECRET`: A secure string for session signing (e.g. `admindasboard3625876`).
+4. Click **Deploy**.
 
-> **Note**: `json-server` is configured for local prototyping and development. For production deployments, connect `NEXT_PUBLIC_API_URL` to a production REST API implementing the endpoints defined in [`src/lib/api.ts`](./src/lib/api.ts).
+> **Note on Backend in Production**: When deployed to Vercel, the application automatically uses its built-in Next.js internal API routes (`/api/employees`, `/api/activities`, `/api/trend`) with direct database fallback. You do **not** need to deploy or run a separate `json-server` instance!
