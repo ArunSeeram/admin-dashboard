@@ -8,6 +8,7 @@
 // -----------------------------------------------------------------------------
 
 import type { Employee, EmployeeFilters, PaginatedResult, Activity, TrendPoint } from "./types";
+import defaultDb from "../../db.json";
 
 function getBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_API_URL) {
@@ -42,7 +43,7 @@ async function readLocalDb() {
       const content = await fs.readFile(dbPath, "utf-8");
       return JSON.parse(content);
     } catch {
-      return null;
+      return defaultDb;
     }
   }
   return null;
@@ -84,6 +85,21 @@ async function fetchWithRetry(url: string, init?: RequestInit, retries = 2, dela
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  // When running on the server in production (Vercel) or without an explicit external backend,
+  // resolve directly from the database to avoid outbound HTTP self-fetch auth/protection errors (e.g. 401).
+  if (typeof window === "undefined" && (!process.env.NEXT_PUBLIC_API_URL || process.env.VERCEL)) {
+    const db = await readLocalDb();
+    if (db) {
+      if (path.startsWith("/trend")) return (db.trend || []) as T;
+      if (path.startsWith("/activities")) return (db.activities || []) as T;
+      if (path.startsWith("/employees/")) {
+        const id = Number(path.replace("/employees/", ""));
+        const emp = (db.employees || []).find((e: any) => e.id === id);
+        if (emp) return emp as T;
+      }
+    }
+  }
+
   try {
     const baseUrl = getBaseUrl();
     const res = await fetchWithRetry(`${baseUrl}${path}`, {
@@ -127,6 +143,23 @@ async function requestPaginated<T>(
   page: number,
   pageSize: number
 ): Promise<PaginatedResult<T>> {
+  if (typeof window === "undefined" && (!process.env.NEXT_PUBLIC_API_URL || process.env.VERCEL)) {
+    const db = await readLocalDb();
+    if (db && Array.isArray(db.employees)) {
+      let list = [...db.employees];
+      const urlObj = new URL(`http://dummy${path}`);
+      const q = urlObj.searchParams.get("q")?.toLowerCase();
+      if (q) list = list.filter((e) => e.name?.toLowerCase().includes(q) || e.email?.toLowerCase().includes(q));
+      const dep = urlObj.searchParams.get("department");
+      if (dep) list = list.filter((e) => e.department?.toLowerCase() === dep.toLowerCase());
+      const status = urlObj.searchParams.get("status");
+      if (status) list = list.filter((e) => e.status === status);
+      const total = list.length;
+      const start = (page - 1) * pageSize;
+      return { data: list.slice(start, start + pageSize) as T[], total, page, pageSize };
+    }
+  }
+
   try {
     const baseUrl = getBaseUrl();
     const res = await fetchWithRetry(`${baseUrl}${path}`, {

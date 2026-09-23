@@ -13,7 +13,7 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/api"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -31,5 +31,5 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   // Run on every route except static assets and the API itself.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api).*)"],
 };
