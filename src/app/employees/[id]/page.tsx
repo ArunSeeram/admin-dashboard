@@ -78,9 +78,9 @@ export default function EmployeeDetailPage() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col min-w-0 w-full">
         <Topbar />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 sm:p-6 min-w-0 max-w-full">
           <Link href="/employees" className="text-sm text-brand-600 hover:underline">
             ← Back to employees
           </Link>

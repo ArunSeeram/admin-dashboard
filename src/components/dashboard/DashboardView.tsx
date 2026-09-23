@@ -54,7 +54,7 @@ export function DashboardView({
   const newHires = filteredTrend.reduce((sum, t) => sum + t.newHires, 0);
 
   return (
-    <main className="flex-1 space-y-6 p-6">
+    <main className="flex-1 space-y-6 p-4 sm:p-6 min-w-0 max-w-full">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold">Dashboard</h1>
         <DateRangeFilter />

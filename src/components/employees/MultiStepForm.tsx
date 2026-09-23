@@ -135,9 +135,9 @@ export function MultiStepForm() {
   }
 
   return (
-    <div className="mx-auto max-w-lg rounded-lg border border-slate-200 bg-white p-6">
+    <div className="mx-auto max-w-lg rounded-lg border border-slate-200 bg-white p-4 sm:p-6">
       {/* Step indicator */}
-      <ol className="mb-6 flex items-center gap-2 text-xs font-medium text-slate-500">
+      <ol className="mb-6 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500">
         {STEPS.map((label, i) => (
           <li key={label} className="flex items-center gap-2">
             <span

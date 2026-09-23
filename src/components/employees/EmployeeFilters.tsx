@@ -39,8 +39,8 @@ export function EmployeeFilters() {
   }
 
   return (
-    <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4">
-      <div className="w-56">
+    <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:flex-wrap sm:items-end">
+      <div className="w-full sm:w-56">
         <Input
           label="Search"
           placeholder="Name or email"
@@ -49,42 +49,44 @@ export function EmployeeFilters() {
         />
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="department" className="text-sm font-medium text-slate-700">
-          Department
-        </label>
-        <select
-          id="department"
-          value={params.get("department") ?? ""}
-          onChange={(e) => updateParam("department", e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-        >
-          <option value="">All departments</option>
-          {DEPARTMENTS.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
-      </div>
+      <div className="grid grid-cols-2 gap-3 sm:flex sm:items-end">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="department" className="text-sm font-medium text-slate-700">
+            Department
+          </label>
+          <select
+            id="department"
+            value={params.get("department") ?? ""}
+            onChange={(e) => updateParam("department", e.target.value)}
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+          >
+            <option value="">All departments</option>
+            {DEPARTMENTS.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="status" className="text-sm font-medium text-slate-700">
-          Status
-        </label>
-        <select
-          id="status"
-          value={params.get("status") ?? ""}
-          onChange={(e) => updateParam("status", e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-        >
-          <option value="">All statuses</option>
-          {STATUSES.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="status" className="text-sm font-medium text-slate-700">
+            Status
+          </label>
+          <select
+            id="status"
+            value={params.get("status") ?? ""}
+            onChange={(e) => updateParam("status", e.target.value)}
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+          >
+            <option value="">All statuses</option>
+            {STATUSES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
     </div>
   );

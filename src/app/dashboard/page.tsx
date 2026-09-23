@@ -28,7 +28,7 @@ export default async function DashboardPage() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col min-w-0 w-full">
         <Topbar />
         <Suspense fallback={null}>
           <DashboardView

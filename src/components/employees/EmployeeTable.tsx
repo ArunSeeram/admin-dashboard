@@ -49,7 +49,7 @@ export function EmployeeTable({
   const allSelected = employees.length > 0 && employees.every((e) => selected.has(e.id));
 
   return (
-    <table className="w-full text-left text-sm">
+    <table className="w-full min-w-[600px] text-left text-sm">
       <thead className="border-b border-slate-100 text-slate-500">
         <tr>
           <th scope="col" className="w-10 px-4 py-2">

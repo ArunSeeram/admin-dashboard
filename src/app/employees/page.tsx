@@ -89,10 +89,10 @@ function EmployeesPageInner() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col min-w-0 w-full">
         <Topbar />
-        <main className="flex-1 p-6">
-          <div className="mb-4 flex items-center justify-between">
+        <main className="flex-1 p-4 sm:p-6 min-w-0 max-w-full">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-xl font-semibold">Employees</h1>
             {can("edit") && (
               <Link href="/employees/new">

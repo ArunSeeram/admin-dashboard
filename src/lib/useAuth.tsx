@@ -39,15 +39,28 @@ const PERMISSIONS: Record<Role, Array<"edit" | "delete" | "bulk">> = {
   viewer: [],
 };
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+const DEFAULT_USER: User = {
+  name: "Admin",
+  email: "admin@example.com",
+  role: "admin",
+};
 
-  // Restore the "session" from localStorage on load, so refreshing the page
-  // doesn't log you out. A real app would validate a token with the server
-  // instead of trusting localStorage.
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(DEFAULT_USER);
+
+  // Restore the session from localStorage on load, or default to Admin so all capabilities are available.
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) setUser(JSON.parse(saved));
+    if (saved) {
+      try {
+        setUser(JSON.parse(saved));
+      } catch {
+        setUser(DEFAULT_USER);
+      }
+    } else {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USER));
+      document.cookie = "session=true; path=/";
+    }
   }, []);
 
   function login(email: string, role: Role) {
