@@ -9,7 +9,18 @@
 
 import type { Employee, EmployeeFilters, PaginatedResult, Activity, TrendPoint } from "./types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+function getBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}/api`;
+  }
+  if (typeof window !== "undefined") {
+    return "/api";
+  }
+  return "http://localhost:4000";
+}
 
 // A tiny custom error so calling code can show a friendly message and,
 // separately, log the technical detail.
@@ -43,7 +54,8 @@ async function fetchWithRetry(url: string, init?: RequestInit, retries = 2, dela
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetchWithRetry(`${BASE_URL}${path}`, {
+  const baseUrl = getBaseUrl();
+  const res = await fetchWithRetry(`${baseUrl}${path}`, {
     headers: { "Content-Type": "application/json" },
     cache: "no-store",
     ...options,
@@ -68,7 +80,8 @@ async function requestPaginated<T>(
   page: number,
   pageSize: number
 ): Promise<PaginatedResult<T>> {
-  const res = await fetchWithRetry(`${BASE_URL}${path}`, {
+  const baseUrl = getBaseUrl();
+  const res = await fetchWithRetry(`${baseUrl}${path}`, {
     cache: "no-store",
   });
   if (!res.ok) throw new ApiError(`Request failed with status ${res.status}`, res.status);
