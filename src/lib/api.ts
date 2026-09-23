@@ -33,16 +33,46 @@ export class ApiError extends Error {
   }
 }
 
+async function readLocalDb() {
+  if (typeof window === "undefined") {
+    try {
+      const fs = await import("fs/promises");
+      const path = await import("path");
+      const dbPath = path.join(process.cwd(), "db.json");
+      const content = await fs.readFile(dbPath, "utf-8");
+      return JSON.parse(content);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 async function fetchWithRetry(url: string, init?: RequestInit, retries = 2, delayMs = 150): Promise<Response> {
+  let currentUrl = url;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const res = await fetch(url, init);
+      const res = await fetch(currentUrl, init);
       if (!res.ok && res.status >= 500 && attempt < retries) {
         await new Promise((resolve) => setTimeout(resolve, delayMs * (attempt + 1)));
         continue;
       }
       return res;
     } catch (err) {
+      // If port 4000 is unreachable, fall back to internal Next.js API routes
+      if (currentUrl.includes(":4000")) {
+        const fallback = typeof window !== "undefined" ? "/api" : "http://localhost:3000/api";
+        const altUrl = currentUrl.replace(/https?:\/\/[^/]+(?::4000)?/, fallback);
+        try {
+          const fallbackRes = await fetch(altUrl, init);
+          if (fallbackRes.ok || fallbackRes.status < 500) {
+            return fallbackRes;
+          }
+        } catch {
+          // If fallback fails, continue loop
+        }
+      }
+
       if (attempt < retries) {
         await new Promise((resolve) => setTimeout(resolve, delayMs * (attempt + 1)));
         continue;
@@ -54,22 +84,39 @@ async function fetchWithRetry(url: string, init?: RequestInit, retries = 2, dela
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const baseUrl = getBaseUrl();
-  const res = await fetchWithRetry(`${baseUrl}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-    ...options,
-  });
+  try {
+    const baseUrl = getBaseUrl();
+    const res = await fetchWithRetry(`${baseUrl}${path}`, {
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+      ...options,
+    });
 
-  if (!res.ok) {
-    // Try to read a useful error message, but don't blow up if the body isn't JSON.
-    const body = await res.json().catch(() => null);
-    throw new ApiError(body?.message ?? `Request failed with status ${res.status}`, res.status);
+    if (!res.ok) {
+      // Try to read a useful error message, but don't blow up if the body isn't JSON.
+      const body = await res.json().catch(() => null);
+      throw new ApiError(body?.message ?? `Request failed with status ${res.status}`, res.status);
+    }
+
+    // json-server returns 200 with an empty body for some DELETE requests.
+    const text = await res.text();
+    return text ? (JSON.parse(text) as T) : (undefined as T);
+  } catch (err) {
+    // Server-side direct DB fallback if mock API is down
+    if (typeof window === "undefined") {
+      const db = await readLocalDb();
+      if (db) {
+        if (path.startsWith("/trend")) return (db.trend || []) as T;
+        if (path.startsWith("/activities")) return (db.activities || []) as T;
+        if (path.startsWith("/employees/")) {
+          const id = Number(path.replace("/employees/", ""));
+          const emp = (db.employees || []).find((e: any) => e.id === id);
+          if (emp) return emp as T;
+        }
+      }
+    }
+    throw err;
   }
-
-  // json-server returns 200 with an empty body for some DELETE requests.
-  const text = await res.text();
-  return text ? (JSON.parse(text) as T) : (undefined as T);
 }
 
 // json-server exposes a special "X-Total-Count" header when you pass
@@ -80,14 +127,35 @@ async function requestPaginated<T>(
   page: number,
   pageSize: number
 ): Promise<PaginatedResult<T>> {
-  const baseUrl = getBaseUrl();
-  const res = await fetchWithRetry(`${baseUrl}${path}`, {
-    cache: "no-store",
-  });
-  if (!res.ok) throw new ApiError(`Request failed with status ${res.status}`, res.status);
-  const data = (await res.json()) as T[];
-  const total = Number(res.headers.get("X-Total-Count") ?? data.length);
-  return { data, total, page, pageSize };
+  try {
+    const baseUrl = getBaseUrl();
+    const res = await fetchWithRetry(`${baseUrl}${path}`, {
+      cache: "no-store",
+    });
+    if (!res.ok) throw new ApiError(`Request failed with status ${res.status}`, res.status);
+    const data = (await res.json()) as T[];
+    const total = Number(res.headers.get("X-Total-Count") ?? data.length);
+    return { data, total, page, pageSize };
+  } catch (err) {
+    // Server-side direct DB fallback if mock API is down
+    if (typeof window === "undefined") {
+      const db = await readLocalDb();
+      if (db && Array.isArray(db.employees)) {
+        let list = [...db.employees];
+        const urlObj = new URL(`http://dummy${path}`);
+        const q = urlObj.searchParams.get("q")?.toLowerCase();
+        if (q) list = list.filter((e) => e.name?.toLowerCase().includes(q) || e.email?.toLowerCase().includes(q));
+        const dep = urlObj.searchParams.get("department");
+        if (dep) list = list.filter((e) => e.department?.toLowerCase() === dep.toLowerCase());
+        const status = urlObj.searchParams.get("status");
+        if (status) list = list.filter((e) => e.status === status);
+        const total = list.length;
+        const start = (page - 1) * pageSize;
+        return { data: list.slice(start, start + pageSize) as T[], total, page, pageSize };
+      }
+    }
+    throw err;
+  }
 }
 
 export const api = {
