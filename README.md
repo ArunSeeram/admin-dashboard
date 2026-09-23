@@ -53,13 +53,14 @@ The portal features a built-in Role-Based Access Control (RBAC) system with mock
 
 | Role | Email | Password | Permissions |
 |---|---|---|---|
-| **Admin** *(Default)* | `admin@example.com` | *(Any password / None required)* | **Full Access**: View dashboard, Add employees, Edit profiles, Delete single employee, Bulk delete |
-| **Editor** | `editor@example.com` | *(Any password / None required)* | **Edit Access**: View dashboard, Add employees, Edit profiles (cannot delete) |
-| **Viewer** | `viewer@example.com` | *(Any password / None required)* | **Read-Only**: View dashboard & employee directory |
+| **Admin** *(Default)* | `admin@example.com` | `Demo123` | **Full Access**: View dashboard, Add employees, Edit profiles, Delete single employee, Bulk delete |
+| **Editor** | `editor@example.com` | `Demo123` | **Edit Access**: View dashboard, Add employees, Edit profiles (cannot delete) |
+| **Viewer** | `viewer@example.com` | `Demo123` | **Read-Only**: View dashboard & employee directory |
 
 ### How Login Works
+- **Password**: The password is **`Demo123`** for all roles.
 - **Automatic Default Session**: For reviewer convenience, visiting the application (locally or on deployed URLs) automatically initializes an **Admin** session so all capabilities ("Add employee", inline editing, and deletion) are immediately available without gating.
-- **Switching Roles**: To test permissions for different roles (e.g. Editor or Viewer), click **Log out** in the top navigation bar or go directly to [`/login`](http://localhost:3000/login). Select your desired role and click **Sign in**.
+- **Switching Roles**: To test permissions for different roles (e.g. Editor or Viewer), click **Log out** in the top navigation bar or go directly to [`/login`](http://localhost:3000/login). Select your desired role, enter the password **`Demo123`**, and click **Sign in**.
 - **Edge Middleware Protection**: Requests without a session cookie are redirected to `/login` by [`middleware.ts`](./middleware.ts).
 
 ---

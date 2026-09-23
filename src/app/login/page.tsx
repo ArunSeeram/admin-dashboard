@@ -25,8 +25,10 @@ function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const [email, setEmail] = useState("admin@example.com");
+  const [password, setPassword] = useState("Demo123");
   const [role, setRole] = useState<Role>("admin");
   const [isLoading, setIsLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
 
   function handleRoleChange(newRole: Role) {
     setRole(newRole);
@@ -38,6 +40,13 @@ function LoginForm() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setPasswordError("");
+
+    if (!password || password !== "Demo123") {
+      setPasswordError("Invalid password. Please use Demo123 for all roles.");
+      return;
+    }
+
     setIsLoading(true);
     const activeEmail = email.trim() || `${role}@example.com`;
     login(activeEmail, role);
@@ -51,7 +60,9 @@ function LoginForm() {
     <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <form onSubmit={handleSubmit} className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-6">
         <h1 className="text-lg font-semibold">Sign in</h1>
-        <p className="mt-1 text-sm text-slate-500">Select a role below or enter any email for the demo.</p>
+        <p className="mt-1 text-sm text-slate-500">
+          Password for all roles is <strong className="font-semibold text-slate-700">Demo123</strong>.
+        </p>
 
         <div className="mt-5 flex flex-col gap-4">
           <div className="flex flex-col gap-1">
@@ -78,6 +89,20 @@ function LoginForm() {
             placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <Input
+            label="Password"
+            id="login-password"
+            name="password"
+            type="password"
+            placeholder="Demo123"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (passwordError) setPasswordError("");
+            }}
+            error={passwordError}
           />
         </div>
 
